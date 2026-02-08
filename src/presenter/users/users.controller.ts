@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateSportProfileDto } from './dto/create-sport-profile.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -13,6 +14,14 @@ export class UsersController {
     @Get('me')
     async getMe(@CurrentUser() user: any) {
         return this.usersService.getMe(user.userId);
+    }
+
+    @Put('me')
+    async updateProfile(
+        @CurrentUser() user: any,
+        @Body() dto: UpdateProfileDto,
+    ) {
+        return this.usersService.updateProfile(user.userId, dto);
     }
 
     @Post('onboarding')

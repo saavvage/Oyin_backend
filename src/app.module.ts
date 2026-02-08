@@ -9,6 +9,7 @@ import { MatchmakingModule } from './presenter/matchmaking/matchmaking.module';
 import { ArenaModule } from './presenter/arena/arena.module';
 import { GamesModule } from './presenter/games/games.module';
 import { DisputesModule } from './presenter/disputes/disputes.module';
+import { ChatsModule } from './presenter/chats/chats.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DisputesModule } from './presenter/disputes/disputes.module';
     ArenaModule,
     GamesModule,
     DisputesModule,
+    ChatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

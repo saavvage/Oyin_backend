@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -36,7 +36,7 @@ export class AuthService {
         // Verify code
         const storedCode = this.smsCodesMap.get(phone);
         if (!storedCode || storedCode !== code) {
-            throw new Error('Invalid verification code');
+            throw new UnauthorizedException('Invalid verification code');
         }
 
         // Remove used code

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../../domain/entities/user.entity';
 import { SportProfile } from '../../domain/entities/sport-profile.entity';
 import { Swipe } from '../../domain/entities/swipe.entity';
@@ -18,7 +18,16 @@ export class MatchmakingService {
         private swipeRepository: Repository<Swipe>,
     ) { }
 
-    async getFeed(userId: string, sport?: SportType) {
+    async getFeed(
+        userId: string,
+        sport?: SportType,
+        filters?: {
+            distanceMin?: number;
+            distanceMax?: number;
+            ageMin?: number;
+            ageMax?: number;
+        },
+    ) {
         // Get current user's location and profile
         const currentUser = await this.userRepository.findOne({
             where: { id: userId },
@@ -26,7 +35,7 @@ export class MatchmakingService {
         });
 
         if (!currentUser) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
         }
 
         // Get users already swiped by current user
@@ -48,6 +57,19 @@ export class MatchmakingService {
             query.andWhere('profile.sportType = :sport', { sport });
         }
 
+        // Filter by age range if provided
+        if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
+            const minAge = filters?.ageMin ?? 0;
+            const maxAge = filters?.ageMax ?? 200;
+            const today = new Date();
+            const maxBirthDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+            const minBirthDate = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+            query.andWhere('user.birthDate BETWEEN :minBirthDate AND :maxBirthDate', {
+                minBirthDate,
+                maxBirthDate,
+            });
+        }
+
         // Exclude already swiped users
         if (swipedUserIds.length > 0) {
             query.andWhere('profile.userId NOT IN (:...swipedUserIds)', {
@@ -58,20 +80,45 @@ export class MatchmakingService {
         // TODO: Add location filter (radius)
         // TODO: Add schedule overlap filter
 
-        const profiles = await query.limit(20).getMany();
+        const rawProfiles = await query.limit(50).getMany();
 
-        return profiles.map((profile) => ({
+        const minDistance = filters?.distanceMin ?? 0;
+        const maxDistance = filters?.distanceMax ?? Number.MAX_SAFE_INTEGER;
+        const minAge = filters?.ageMin ?? 0;
+        const maxAge = filters?.ageMax ?? 200;
+
+        const filtered = rawProfiles
+            .map((profile) => {
+                const age = this.calculateAge(profile.user.birthDate);
+                const distanceKm = this.calculateDistance(
+                    currentUser.latitude,
+                    currentUser.longitude,
+                    profile.user.latitude,
+                    profile.user.longitude,
+                );
+
+                return {
+                    profile,
+                    age,
+                    distanceKm,
+                };
+            })
+            .filter((item) => {
+                if (item.age < minAge || item.age > maxAge) return false;
+                if (item.distanceKm < minDistance || item.distanceKm > maxDistance) return false;
+                return true;
+            })
+            .slice(0, 20);
+
+        return filtered.map(({ profile, age, distanceKm }) => ({
             id: profile.user.id,
             name: profile.user.name,
-            age: this.calculateAge(profile.user.birthDate),
-            distanceKm: this.calculateDistance(
-                currentUser.latitude,
-                currentUser.longitude,
-                profile.user.latitude,
-                profile.user.longitude,
-            ),
+            age,
+            city: profile.user.city || '',
+            distanceKm,
             rating: profile.eloRating,
             sport: profile.sportType,
+            sports: [profile.sportType],
             level: profile.level,
             tags: profile.skills || [],
             imageUrl: profile.user.avatarUrl || '',
@@ -89,7 +136,7 @@ export class MatchmakingService {
         });
 
         if (existing) {
-            throw new Error('Already swiped this user');
+            throw new ForbiddenException('Already swiped this user');
         }
 
         // Create swipe
@@ -124,6 +171,17 @@ export class MatchmakingService {
         return {
             success: true,
             isMatch,
+        };
+    }
+
+    async resetDislikes(userId: string) {
+        await this.swipeRepository.delete({
+            actorId: userId,
+            action: SwipeAction.DISLIKE,
+        });
+
+        return {
+            success: true,
         };
     }
 

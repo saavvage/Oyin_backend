@@ -5,6 +5,7 @@ import { User } from '../../domain/entities/user.entity';
 import { SportProfile } from '../../domain/entities/sport-profile.entity';
 import { CreateSportProfileDto } from './dto/create-sport-profile.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +37,35 @@ export class UsersService {
             karma: user.karma,
             reliabilityScore: user.reliabilityScore,
             sportProfiles: user.sportProfiles,
+        };
+    }
+
+    async updateProfile(userId: string, dto: UpdateProfileDto) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (dto.name !== undefined) user.name = dto.name;
+        if (dto.email !== undefined) user.email = dto.email;
+        if (dto.city !== undefined) user.city = dto.city;
+        if (dto.birthDate !== undefined) user.birthDate = new Date(dto.birthDate);
+
+        await this.userRepository.save(user);
+
+        return {
+            success: true,
+            user: {
+                id: user.id,
+                phone: user.phone,
+                name: user.name,
+                email: user.email,
+                city: user.city,
+                birthDate: user.birthDate,
+                avatarUrl: user.avatarUrl,
+                karma: user.karma,
+                reliabilityScore: user.reliabilityScore,
+            },
         };
     }
 
