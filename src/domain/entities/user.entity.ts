@@ -55,6 +55,24 @@ export class User {
     @Column({ type: 'float', nullable: true })
     longitude: number;
 
+    @Column({ nullable: true, length: 1024 })
+    fcmToken: string;
+
+    @Column({ nullable: true, length: 16 })
+    pushPlatform: string;
+
+    @Column({ type: 'boolean', default: false })
+    pushNotificationsEnabled: boolean;
+
+    @Column({ type: 'int', default: 60 })
+    pushReminderIntervalMinutes: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    pushTokenUpdatedAt: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    pushReminderLastSentAt: Date;
+
     @CreateDateColumn()
     createdAt: Date;
 

@@ -10,6 +10,7 @@ import { ArenaModule } from './presenter/arena/arena.module';
 import { GamesModule } from './presenter/games/games.module';
 import { DisputesModule } from './presenter/disputes/disputes.module';
 import { ChatsModule } from './presenter/chats/chats.module';
+import { PushModule } from './infrastructure/push/push.module';
 
 @Module({
   imports: [
@@ -39,9 +40,9 @@ import { ChatsModule } from './presenter/chats/chats.module';
     GamesModule,
     DisputesModule,
     ChatsModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule { }
-

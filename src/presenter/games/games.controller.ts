@@ -1,5 +1,6 @@
 import {
     Controller,
+    Get,
     Post,
     Param,
     Body,
@@ -15,6 +16,14 @@ import { ResultDto } from './dto/result.dto';
 @UseGuards(JwtAuthGuard)
 export class GamesController {
     constructor(private gamesService: GamesService) { }
+
+    @Get(':gameId')
+    async getGame(
+        @Param('gameId') gameId: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.gamesService.getGameById(gameId, user.userId);
+    }
 
     @Post(':gameId/contract')
     async proposeContract(

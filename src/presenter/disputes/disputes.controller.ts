@@ -27,6 +27,16 @@ export class DisputesController {
         return this.disputesService.getJuryDuty(user.userId);
     }
 
+    @Get('my')
+    async getMyDisputes(@CurrentUser() user: any) {
+        return this.disputesService.getMyDisputes(user.userId);
+    }
+
+    @Get(':id')
+    async getDispute(@Param('id') disputeId: string, @CurrentUser() user: any) {
+        return this.disputesService.getDisputeById(disputeId, user.userId);
+    }
+
     @Post(':id/vote')
     async vote(
         @Param('id') disputeId: string,

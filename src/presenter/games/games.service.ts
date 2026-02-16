@@ -9,6 +9,13 @@ import { ContractDto } from './dto/contract.dto';
 import { ResultDto } from './dto/result.dto';
 import { EloService } from '../../infrastructure/services/elo.service';
 
+type RatingChanges = {
+    player1Before: number;
+    player1After: number;
+    player2Before: number;
+    player2After: number;
+};
+
 @Injectable()
 export class GamesService {
     constructor(
@@ -20,6 +27,23 @@ export class GamesService {
         private userRepository: Repository<User>,
         private eloService: EloService,
     ) { }
+
+    async getGameById(gameId: string, userId: string) {
+        const game = await this.gameRepository.findOne({
+            where: { id: gameId },
+            relations: ['player1', 'player2', 'winner', 'dispute'],
+        });
+
+        if (!game) {
+            throw new NotFoundException('Game not found');
+        }
+
+        if (game.player1Id !== userId && game.player2Id !== userId) {
+            throw new BadRequestException('You are not a player in this game');
+        }
+
+        return this.mapGame(game);
+    }
 
     async proposeContract(gameId: string, userId: string, dto: ContractDto) {
         const game = await this.gameRepository.findOne({
@@ -100,7 +124,8 @@ export class GamesService {
             game.scorePlayer1 = `${dto.myScore}-${dto.opponentScore}`;
             game.player1Submitted = true;
         } else {
-            game.scorePlayer2 = `${dto.myScore}-${dto.opponentScore}`;
+            // Store in canonical "player1-player2" format for reliable comparison.
+            game.scorePlayer2 = `${dto.opponentScore}-${dto.myScore}`;
             game.player2Submitted = true;
         }
 
@@ -124,6 +149,7 @@ export class GamesService {
             gameId: game.id,
             status: game.status,
             scoresMatch: game.player1Submitted && game.player2Submitted && game.scorePlayer1 === game.scorePlayer2,
+            game: this.mapGame(game),
         };
     }
 
@@ -145,7 +171,7 @@ export class GamesService {
         await this.updateReliabilityScores(game);
     }
 
-    async updateEloRatings(game: Game, isDisputeResolution: boolean = false) {
+    async updateEloRatings(game: Game, isDisputeResolution: boolean = false): Promise<RatingChanges | null> {
         // Get sport profiles for both players (assumes same sport)
         const profiles = await this.sportProfileRepository.find({
             where: [
@@ -158,8 +184,11 @@ export class GamesService {
         const player2Profile = profiles.find(p => p.userId === game.player2Id);
 
         if (!player1Profile || !player2Profile) {
-            return; // Can't update ratings without profiles
+            return null; // Can't update ratings without profiles
         }
+
+        const player1Before = player1Profile.eloRating;
+        const player2Before = player2Profile.eloRating;
 
         if (game.winnerId) {
             const winnerId = game.winnerId;
@@ -199,6 +228,13 @@ export class GamesService {
         player2Profile.gamesPlayed++;
 
         await this.sportProfileRepository.save([player1Profile, player2Profile]);
+
+        return {
+            player1Before,
+            player1After: player1Profile.eloRating,
+            player2Before,
+            player2After: player2Profile.eloRating,
+        };
     }
 
     private async updateReliabilityScores(game: Game) {
@@ -215,5 +251,37 @@ export class GamesService {
         }
 
         await this.userRepository.save(users);
+    }
+
+    private mapGame(game: Game) {
+        return {
+            id: game.id,
+            type: game.type,
+            status: game.status,
+            player1: {
+                id: game.player1?.id || game.player1Id,
+                name: game.player1?.name || 'Player 1',
+                avatarUrl: game.player1?.avatarUrl || '',
+            },
+            player2: {
+                id: game.player2?.id || game.player2Id,
+                name: game.player2?.name || 'Player 2',
+                avatarUrl: game.player2?.avatarUrl || '',
+            },
+            winner: game.winner
+                ? {
+                    id: game.winner.id,
+                    name: game.winner.name,
+                }
+                : null,
+            contractData: game.contractData || null,
+            scorePlayer1: game.scorePlayer1 || null,
+            scorePlayer2: game.scorePlayer2 || null,
+            player1Submitted: game.player1Submitted,
+            player2Submitted: game.player2Submitted,
+            disputeId: game.dispute?.id || null,
+            createdAt: game.createdAt,
+            updatedAt: game.updatedAt,
+        };
     }
 }
