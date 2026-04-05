@@ -124,17 +124,24 @@ export class ChatsService {
     const message = this.messageRepository.create({
       threadId,
       senderId: userId,
-      text: text || null,
-      attachments: attachments.map((item) =>
+      text: text || undefined,
+    } as any);
+
+    const saved: ChatMessage = await this.messageRepository.save(message) as any;
+
+    if (attachments.length > 0) {
+      const attachmentEntities = attachments.map((item) =>
         this.attachmentRepository.create({
+          messageId: saved.id,
           type: item.type,
           name: item.name,
           path: item.path,
         }),
-      ),
-    });
+      );
+      await this.attachmentRepository.save(attachmentEntities);
+      saved.attachments = attachmentEntities;
+    }
 
-    const saved = await this.messageRepository.save(message);
     const lastText = text || 'Вложение';
 
     await this.threadRepository.update(threadId, {
@@ -174,16 +181,14 @@ export class ChatsService {
       return this.mapThreadParticipantToListItem(existingThread);
     }
 
-    const createdThread = await this.threadRepository.save(
+    const createdThread: ChatThread = await this.threadRepository.save(
       this.threadRepository.create({
         bucket: 'upcoming',
         statusKey: 'status_matched',
-        accent: null,
         highlight: false,
-        buttonKey: null,
         subtitle: '',
-      }),
-    );
+      } as any),
+    ) as any;
 
     await this.participantRepository.save([
       this.participantRepository.create({
@@ -191,14 +196,14 @@ export class ChatsService {
         userId,
         partnerName: partnerUser.name,
         partnerAvatarUrl: partnerUser.avatarUrl || '',
-      }),
+      } as any),
       this.participantRepository.create({
         threadId: createdThread.id,
         userId: partnerUser.id,
         partnerName: currentUser.name,
         partnerAvatarUrl: currentUser.avatarUrl || '',
-      }),
-    ]);
+      } as any),
+    ] as any);
 
     const ownParticipant = await this.participantRepository.findOne({
       where: { threadId: createdThread.id, userId },
@@ -260,8 +265,8 @@ export class ChatsService {
     const report = this.reportRepository.create({
       threadId,
       userId,
-      reason: reason || null,
-    });
+      reason: reason || undefined,
+    } as any);
 
     await this.reportRepository.save(report);
     return { success: true };

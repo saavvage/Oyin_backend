@@ -10,6 +10,7 @@ import { ArenaModule } from './presenter/arena/arena.module';
 import { GamesModule } from './presenter/games/games.module';
 import { DisputesModule } from './presenter/disputes/disputes.module';
 import { ChatsModule } from './presenter/chats/chats.module';
+import { WalletModule } from './presenter/wallet/wallet.module';
 import { PushModule } from './infrastructure/push/push.module';
 
 @Module({
@@ -40,6 +41,7 @@ import { PushModule } from './infrastructure/push/push.module';
     GamesModule,
     DisputesModule,
     ChatsModule,
+    WalletModule,
     PushModule,
   ],
   controllers: [AppController],

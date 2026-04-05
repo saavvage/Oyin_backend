@@ -34,14 +34,12 @@ services:
       dockerfile: Dockerfile
     container_name: oyin-backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
+      # Override DB/Minio hosts to use Docker service names
       DB_HOST: oyin-db
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
-      DB_DATABASE: sportmatch_dev
-      JWT_SECRET: dev_secret
       MINIO_ENDPOINT: oyin-minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minio

@@ -97,6 +97,12 @@ export class UsersService {
       dto.experienceYears,
     );
 
+    // Set initial ELO based on skill level (only for new profiles)
+    if (!existingProfile) {
+      const initialElo = { AMATEUR: 1000, SEMI_PRO: 1300, PRO: 1600 };
+      profile.eloRating = initialElo[dto.level] ?? 1000;
+    }
+
     await this.sportProfileRepository.save(profile);
 
     return {
@@ -130,6 +136,7 @@ export class UsersService {
           sportType: input.sportType,
         });
 
+      const isNew = !existingBySport.has(input.sportType);
       profile.level = input.level;
       profile.skills = this.normalizeSkills(input.skills);
       profile.availability = input.schedule || {};
@@ -137,6 +144,10 @@ export class UsersService {
       profile.experienceYears = this.normalizeExperienceYears(
         input.experienceYears,
       );
+      if (isNew) {
+        const initialElo = { AMATEUR: 1000, SEMI_PRO: 1300, PRO: 1600 };
+        profile.eloRating = initialElo[input.level] ?? 1000;
+      }
       toSave.push(profile);
     }
 

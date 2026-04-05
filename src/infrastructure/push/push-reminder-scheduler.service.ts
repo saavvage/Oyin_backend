@@ -99,7 +99,7 @@ export class PushReminderSchedulerService
         }
 
         const result = await this.fcmService.sendToToken({
-          token: user.fcmToken,
+          token: user.fcmToken!,
           title: this.getReminderTitle(),
           body: this.getReminderBody(),
           data: {
@@ -117,7 +117,7 @@ export class PushReminderSchedulerService
 
         if (result.invalidToken) {
           await this.userRepository.update(user.id, {
-            fcmToken: null,
+            fcmToken: null as any,
             pushTokenUpdatedAt: now,
           });
         }

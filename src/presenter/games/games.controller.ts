@@ -17,6 +17,11 @@ import { ResultDto } from './dto/result.dto';
 export class GamesController {
     constructor(private gamesService: GamesService) { }
 
+    @Get('my')
+    async getMyGames(@CurrentUser() user: any) {
+        return this.gamesService.getMyGames(user.userId);
+    }
+
     @Get(':gameId')
     async getGame(
         @Param('gameId') gameId: string,

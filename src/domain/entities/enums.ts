@@ -60,3 +60,14 @@ export enum DisputeEvidenceType {
   VIDEO = 'VIDEO',
   IMAGE = 'IMAGE',
 }
+
+export enum TransactionType {
+  DAILY_REWARD = 'DAILY_REWARD',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT',
+  PURCHASE = 'PURCHASE',
+  KARMA_BONUS = 'KARMA_BONUS',
+  GAME_WIN = 'GAME_WIN',
+  GAME_LOSS = 'GAME_LOSS',
+  GAME_DRAW = 'GAME_DRAW',
+}

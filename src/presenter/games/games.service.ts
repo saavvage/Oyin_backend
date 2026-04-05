@@ -4,10 +4,15 @@ import { Repository } from 'typeorm';
 import { Game } from '../../domain/entities/game.entity';
 import { SportProfile } from '../../domain/entities/sport-profile.entity';
 import { User } from '../../domain/entities/user.entity';
-import { GameStatus, GameType } from '../../domain/entities/enums';
+import { Transaction } from '../../domain/entities/transaction.entity';
+import { GameStatus, GameType, TransactionType } from '../../domain/entities/enums';
 import { ContractDto } from './dto/contract.dto';
 import { ResultDto } from './dto/result.dto';
 import { EloService } from '../../infrastructure/services/elo.service';
+
+const GAME_WIN_REWARD = 25;
+const GAME_LOSS_REWARD = 5;
+const GAME_DRAW_REWARD = 10;
 
 type RatingChanges = {
     player1Before: number;
@@ -25,8 +30,34 @@ export class GamesService {
         private sportProfileRepository: Repository<SportProfile>,
         @InjectRepository(User)
         private userRepository: Repository<User>,
+        @InjectRepository(Transaction)
+        private transactionRepository: Repository<Transaction>,
         private eloService: EloService,
     ) { }
+
+    async getMyGames(userId: string) {
+        const games = await this.gameRepository.find({
+            where: [
+                { player1Id: userId },
+                { player2Id: userId },
+            ],
+            relations: ['player1', 'player2', 'winner'],
+            order: { createdAt: 'DESC' },
+            take: 50,
+        });
+
+        return games.map(game => ({
+            ...this.mapGame(game),
+            myRole: game.player1Id === userId ? 'player1' : 'player2',
+            result: this.getMyResult(game, userId),
+        }));
+    }
+
+    private getMyResult(game: Game, userId: string): 'win' | 'loss' | 'draw' | 'pending' {
+        if (game.status !== GameStatus.PLAYED) return 'pending';
+        if (!game.winnerId) return 'draw';
+        return game.winnerId === userId ? 'win' : 'loss';
+    }
 
     async getGameById(gameId: string, userId: string) {
         const game = await this.gameRepository.findOne({
@@ -169,6 +200,9 @@ export class GamesService {
 
         // Update reliability scores
         await this.updateReliabilityScores(game);
+
+        // Award coins for game result
+        await this.awardGameCoins(game);
     }
 
     async updateEloRatings(game: Game, isDisputeResolution: boolean = false): Promise<RatingChanges | null> {
@@ -251,6 +285,69 @@ export class GamesService {
         }
 
         await this.userRepository.save(users);
+    }
+
+    async awardGameCoins(game: Game) {
+        const users = await this.userRepository.find({
+            where: [
+                { id: game.player1Id },
+                { id: game.player2Id },
+            ],
+        });
+
+        const player1 = users.find(u => u.id === game.player1Id);
+        const player2 = users.find(u => u.id === game.player2Id);
+        if (!player1 || !player2) return;
+
+        if (game.winnerId) {
+            const winner = game.winnerId === player1.id ? player1 : player2;
+            const loser = game.winnerId === player1.id ? player2 : player1;
+
+            winner.balance += GAME_WIN_REWARD;
+            loser.balance += GAME_LOSS_REWARD;
+
+            await this.userRepository.save([winner, loser]);
+
+            await this.transactionRepository.save([
+                this.transactionRepository.create({
+                    userId: winner.id,
+                    type: TransactionType.GAME_WIN,
+                    amount: GAME_WIN_REWARD,
+                    balanceAfter: winner.balance,
+                    description: `Won challenge vs ${loser.name}`,
+                }),
+                this.transactionRepository.create({
+                    userId: loser.id,
+                    type: TransactionType.GAME_LOSS,
+                    amount: GAME_LOSS_REWARD,
+                    balanceAfter: loser.balance,
+                    description: `Lost challenge vs ${winner.name}`,
+                }),
+            ]);
+        } else {
+            // Draw
+            player1.balance += GAME_DRAW_REWARD;
+            player2.balance += GAME_DRAW_REWARD;
+
+            await this.userRepository.save([player1, player2]);
+
+            await this.transactionRepository.save([
+                this.transactionRepository.create({
+                    userId: player1.id,
+                    type: TransactionType.GAME_DRAW,
+                    amount: GAME_DRAW_REWARD,
+                    balanceAfter: player1.balance,
+                    description: `Draw vs ${player2.name}`,
+                }),
+                this.transactionRepository.create({
+                    userId: player2.id,
+                    type: TransactionType.GAME_DRAW,
+                    amount: GAME_DRAW_REWARD,
+                    balanceAfter: player2.balance,
+                    description: `Draw vs ${player1.name}`,
+                }),
+            ]);
+        }
     }
 
     private mapGame(game: Game) {

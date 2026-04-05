@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TelegramGatewayService } from '../../infrastructure/services/telegram-gateway.service';
+import { EmailVerificationService } from '../../infrastructure/services/email-verification.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { TelegramGatewayService } from '../../infrastructure/services/telegram-g
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TelegramGatewayService],
+  providers: [AuthService, JwtStrategy, TelegramGatewayService, EmailVerificationService],
   exports: [AuthService],
 })
 export class AuthModule {}

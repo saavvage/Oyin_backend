@@ -79,25 +79,25 @@ export class DisputesService {
             description: dto.comment,
             subject: dto.subject || this.buildDefaultSubject(game),
             sport: dto.sport || this.buildDefaultSport(game),
-            locationLabel: dto.locationLabel || game.contractData?.location || null,
-            plaintiffStatement: dto.plaintiffStatement || null,
-            defendantStatement: dto.defendantStatement || null,
-        });
+            locationLabel: dto.locationLabel || game.contractData?.location || undefined,
+            plaintiffStatement: dto.plaintiffStatement || undefined,
+            defendantStatement: dto.defendantStatement || undefined,
+        } as any);
 
-        await this.disputeRepository.save(dispute);
+        const savedDispute: Dispute = await this.disputeRepository.save(dispute) as any;
 
         const evidenceItems = this.resolveEvidenceItems(dto);
         if (evidenceItems.length > 0) {
             const entities = evidenceItems.map((item) =>
                 this.disputeEvidenceRepository.create({
-                    disputeId: dispute.id,
+                    disputeId: savedDispute.id,
                     type: item.type,
                     url: item.url,
-                    thumbnailUrl: item.thumbnailUrl || null,
-                    durationLabel: item.durationLabel || null,
-                }),
+                    thumbnailUrl: item.thumbnailUrl || undefined,
+                    durationLabel: item.durationLabel || undefined,
+                } as any),
             );
-            await this.disputeEvidenceRepository.save(entities);
+            await this.disputeEvidenceRepository.save(entities as any);
         }
 
         // Update game status
@@ -106,9 +106,9 @@ export class DisputesService {
 
         return {
             success: true,
-            disputeId: dispute.id,
+            disputeId: savedDispute.id,
             status: game.status,
-            dispute: await this.getDisputeById(dispute.id, userId),
+            dispute: await this.getDisputeById(savedDispute.id, userId),
         };
     }
 
@@ -310,6 +310,9 @@ export class DisputesService {
             }
 
             await this.applyReliabilityImpact(game, winningSide);
+
+            // Award coins for game result
+            await this.gamesService.awardGameCoins(game);
 
             // Award karma to jurors
             await this.awardKarmaToJurors(dispute.id, winningSide);

@@ -153,16 +153,12 @@ export class FcmService implements OnModuleInit {
 
   private parseServiceAccountJson(rawJson: string): admin.ServiceAccount | null {
     try {
-      const parsed = JSON.parse(rawJson) as
-        | admin.ServiceAccount
-        | LegacyServiceAccountShape;
+      const parsed = JSON.parse(rawJson) as Record<string, unknown>;
 
-      const projectId = (parsed.projectId || parsed.project_id || '').trim();
-      const clientEmail = (parsed.clientEmail || parsed.client_email || '').trim();
+      const projectId = ((parsed.projectId || parsed.project_id || '') as string).trim();
+      const clientEmail = ((parsed.clientEmail || parsed.client_email || '') as string).trim();
       const privateKey = (
-        parsed.privateKey ||
-        parsed.private_key ||
-        ''
+        (parsed.privateKey || parsed.private_key || '') as string
       )
         .toString()
         .replace(/\\n/g, '\n')

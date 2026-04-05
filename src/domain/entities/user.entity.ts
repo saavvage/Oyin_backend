@@ -24,20 +24,29 @@ export class User {
     @Column()
     name: string;
 
-    @Column({ nullable: true })
-    email: string;
+    @Column({ type: 'varchar', nullable: true })
+    email: string | null;
 
-    @Column({ nullable: true })
-    city: string;
+    @Column({ type: 'varchar', nullable: true })
+    city: string | null;
 
     @Column({ type: 'date', nullable: true })
-    birthDate: Date;
+    birthDate: Date | null;
 
-    @Column({ nullable: true })
-    avatarUrl: string;
+    @Column({ type: 'varchar', nullable: true })
+    avatarUrl: string | null;
 
     @Column({ type: 'int', default: 0 })
     karma: number;
+
+    @Column({ type: 'int', default: 0 })
+    balance: number;
+
+    @Column({ type: 'date', nullable: true })
+    lastDailyRewardAt: Date | null;
+
+    @Column({ type: 'int', default: 0 })
+    dailyRewardStreak: number;
 
     @Column({ type: 'float', default: 100.0 })
     reliabilityScore: number;
@@ -50,16 +59,16 @@ export class User {
     role: UserRole;
 
     @Column({ type: 'float', nullable: true })
-    latitude: number;
+    latitude: number | null;
 
     @Column({ type: 'float', nullable: true })
-    longitude: number;
+    longitude: number | null;
 
-    @Column({ nullable: true, length: 1024 })
-    fcmToken: string;
+    @Column({ type: 'varchar', nullable: true, length: 1024 })
+    fcmToken: string | null;
 
-    @Column({ nullable: true, length: 16 })
-    pushPlatform: string;
+    @Column({ type: 'varchar', nullable: true, length: 16 })
+    pushPlatform: string | null;
 
     @Column({ type: 'boolean', default: false })
     pushNotificationsEnabled: boolean;
@@ -68,10 +77,10 @@ export class User {
     pushReminderIntervalMinutes: number;
 
     @Column({ type: 'timestamp', nullable: true })
-    pushTokenUpdatedAt: Date;
+    pushTokenUpdatedAt: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })
-    pushReminderLastSentAt: Date;
+    pushReminderLastSentAt: Date | null;
 
     @CreateDateColumn()
     createdAt: Date;
