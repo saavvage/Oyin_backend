@@ -12,6 +12,7 @@ import { DisputesModule } from './presenter/disputes/disputes.module';
 import { ChatsModule } from './presenter/chats/chats.module';
 import { WalletModule } from './presenter/wallet/wallet.module';
 import { PushModule } from './infrastructure/push/push.module';
+import { AiChatModule } from './presenter/ai-chat/ai-chat.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PushModule } from './infrastructure/push/push.module';
     ChatsModule,
     WalletModule,
     PushModule,
+    AiChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -28,6 +28,21 @@ services:
     volumes:
       - oyin_minio_data:/data
 
+  oyin-ml:
+    build:
+      context: ../oyin_ml
+      dockerfile: Dockerfile
+    container_name: oyin-ml
+    restart: unless-stopped
+    env_file:
+      - ../oyin_ml/.env
+    ports:
+      - '8000:8000'
+    volumes:
+      - ../oyin_ml/models:/app/models
+      - ../oyin_ml/chroma_db:/app/chroma_db
+      - ../oyin_ml/rag_files:/app/rag_files
+
   oyin-backend:
     build:
       context: .
@@ -44,11 +59,14 @@ services:
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
+      # ML service inside Docker network
+      ML_SERVICE_URL: http://oyin-ml:8000
     ports:
       - '3000:3000'
     depends_on:
       - oyin-db
       - oyin-minio
+      - oyin-ml
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
