@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../domain/entities/user.entity';
@@ -33,8 +37,10 @@ export class UsersService {
     return {
       id: user.id,
       phone: user.phone,
+      phoneVerified: user.phoneVerified,
       name: user.name,
       email: user.email,
+      emailVerified: user.emailVerified,
       city: user.city,
       birthDate: user.birthDate,
       avatarUrl: user.avatarUrl,
@@ -50,7 +56,18 @@ export class UsersService {
     const user = await this.getUserOrThrow(userId);
 
     if (dto.name !== undefined) user.name = dto.name;
-    if (dto.email !== undefined) user.email = dto.email;
+    if (dto.email !== undefined) {
+      const normalizedEmail = dto.email.trim().toLowerCase();
+      const existing = await this.userRepository.findOne({
+        where: { email: normalizedEmail },
+      });
+      if (existing && existing.id !== user.id) {
+        throw new BadRequestException(
+          'Email is already used by another account',
+        );
+      }
+      user.email = normalizedEmail;
+    }
     if (dto.city !== undefined) user.city = dto.city;
     if (dto.birthDate !== undefined) user.birthDate = new Date(dto.birthDate);
     if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl;
@@ -62,8 +79,10 @@ export class UsersService {
       user: {
         id: user.id,
         phone: user.phone,
+        phoneVerified: user.phoneVerified,
         name: user.name,
         email: user.email,
+        emailVerified: user.emailVerified,
         city: user.city,
         birthDate: user.birthDate,
         avatarUrl: user.avatarUrl,
@@ -203,8 +222,7 @@ export class UsersService {
     const sportProfiles = user.sportProfiles || [];
     const profileWithAvailability = sportProfiles.find(
       (profile) =>
-        profile.availability &&
-        Object.keys(profile.availability).length > 0,
+        profile.availability && Object.keys(profile.availability).length > 0,
     );
     const schedule =
       profileWithAvailability?.availability ||

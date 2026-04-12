@@ -17,7 +17,7 @@ export class AiChatController {
   /** POST /api/ai/chat — proxy to ML service */
   @Post('chat')
   async chat(@Body() dto: AiChatDto) {
-    const userId = dto.user_id ?? 'anonymous';
+    const userId = dto.user_id;
     this.logger.log(`AI chat from user ${userId}: ${dto.message.slice(0, 50)}...`);
     return this.aiChatService.chat(
       userId,

@@ -5,7 +5,7 @@
 - Realtime: `Socket.IO` (`/chats` namespace)
 - Push: `firebase-admin` (FCM)
 - SMS/OTP: Telegram Gateway + mock fallback (код `123456`)
-- Email OTP: `Nodemailer` (SMTP) + mock fallback (код `123456`)
+- Email OTP: Brevo Transactional Email + mock fallback (код `123456`)
 - Frontend: Flutter (в соседней папке `../oyin_front`)
 
 ### Авторизация
@@ -13,7 +13,7 @@
 Приложение поддерживает два способа верификации:
 
 1. **Телефон** — через Telegram Gateway (или mock-код `123456` в dev-режиме)
-2. **Email** — через SMTP (Nodemailer). Настраивается через переменные `SMTP_*` в `.env`. Если SMTP не настроен — используется mock-код `123456`.
+2. **Email** — через Brevo API. Настраивается через переменные `BREVO_*` в `.env`. Если Brevo не настроен — используется mock-код `123456`.
 
 При регистрации создается новый пользователь. При повторном входе — выдается JWT-токен существующего.
 
@@ -246,4 +246,3 @@ SELECT
 6. Доказательства сохраняются в `dispute_evidences.disputeId = disputes.id`.
 7. Жюри голосует в `jury_votes.disputeId`.
 8. После резолва спора матч переводится в `PLAYED`, фиксируются rating snapshot поля в `disputes`.
-

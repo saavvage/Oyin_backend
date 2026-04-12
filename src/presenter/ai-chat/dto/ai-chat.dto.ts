@@ -4,7 +4,23 @@ import {
   IsArray,
   IsNumber,
   IsObject,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class AiRecentMatchDto {
+  @IsOptional()
+  @IsString()
+  sport?: string;
+
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  opponent?: string;
+}
 
 export class AiUserContextDto {
   @IsOptional()
@@ -22,15 +38,20 @@ export class AiUserContextDto {
   @IsOptional()
   @IsNumber()
   matches_played?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AiRecentMatchDto)
+  recent_matches?: AiRecentMatchDto[];
 }
 
 export class AiChatDto {
   @IsString()
   message: string;
 
-  @IsOptional()
   @IsString()
-  user_id?: string; // ignored — we use the JWT user, but frontend still sends it
+  user_id: string;
 
   @IsOptional()
   user_context?: AiUserContextDto;
