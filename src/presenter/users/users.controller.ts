@@ -27,6 +27,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePushSettingsDto } from './dto/update-push-settings.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ReplaceSportProfilesDto } from './dto/replace-sport-profiles.dto';
+import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 
 const avatarUploadDir = () => {
   const configured = (process.env.UPLOAD_AVATAR_DIR || '').trim();
@@ -134,6 +135,21 @@ export class UsersController {
     @Body() dto: UpdateLocationDto,
   ) {
     return this.usersService.updateLocation(user.userId, dto);
+  }
+
+  @Get('me/availability')
+  @UseGuards(JwtAuthGuard)
+  async getAvailability(@CurrentUser() user: any) {
+    return this.usersService.getAvailability(user.userId);
+  }
+
+  @Put('me/availability')
+  @UseGuards(JwtAuthGuard)
+  async updateAvailability(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateAvailabilityDto,
+  ) {
+    return this.usersService.updateAvailability(user.userId, dto);
   }
 
   @Get('me/push-settings')

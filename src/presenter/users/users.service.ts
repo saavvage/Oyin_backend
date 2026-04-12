@@ -9,6 +9,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePushSettingsDto } from './dto/update-push-settings.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ReplaceSportProfilesDto } from './dto/replace-sport-profiles.dto';
+import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 
 @Injectable()
 export class UsersService {
@@ -186,6 +187,75 @@ export class UsersService {
         lat: user.latitude,
         lng: user.longitude,
       },
+    };
+  }
+
+  async getAvailability(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['sportProfiles'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const sportProfiles = user.sportProfiles || [];
+    const profileWithAvailability = sportProfiles.find(
+      (profile) =>
+        profile.availability &&
+        Object.keys(profile.availability).length > 0,
+    );
+    const schedule =
+      profileWithAvailability?.availability ||
+      sportProfiles[0]?.availability ||
+      {};
+
+    return {
+      city: user.city || '',
+      schedule: schedule || {},
+      profilesCount: sportProfiles.length,
+    };
+  }
+
+  async updateAvailability(userId: string, dto: UpdateAvailabilityDto) {
+    const user = await this.getUserOrThrow(userId);
+
+    if (dto.city !== undefined) {
+      user.city = dto.city;
+      await this.userRepository.save(user);
+    }
+
+    let profilesUpdated = 0;
+    let profilesCount = 0;
+    let schedule: Record<string, any> = {};
+
+    if (dto.schedule !== undefined) {
+      schedule = dto.schedule || {};
+      const sportProfiles = await this.sportProfileRepository.find({
+        where: { userId },
+      });
+
+      profilesCount = sportProfiles.length;
+      if (sportProfiles.length > 0) {
+        for (const profile of sportProfiles) {
+          profile.availability = schedule;
+        }
+        await this.sportProfileRepository.save(sportProfiles);
+        profilesUpdated = sportProfiles.length;
+      }
+    } else {
+      profilesCount = await this.sportProfileRepository.count({
+        where: { userId },
+      });
+    }
+
+    return {
+      success: true,
+      city: user.city || '',
+      schedule,
+      profilesCount,
+      profilesUpdated,
     };
   }
 
