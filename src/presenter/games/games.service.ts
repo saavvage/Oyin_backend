@@ -90,6 +90,28 @@ export class GamesService {
             throw new BadRequestException('You are not a player in this game');
         }
 
+        const existing = game.contractData;
+        if (existing?.date) {
+            const isSamePayload =
+                existing.date === dto.date &&
+                (existing.venueId || '') === (dto.venueId || '') &&
+                (existing.location || '') === (dto.location || '') &&
+                !!existing.reminder === !!dto.reminder;
+
+            if (isSamePayload) {
+                return {
+                    success: true,
+                    gameId: game.id,
+                    contractData: game.contractData,
+                    locked: true,
+                };
+            }
+
+            throw new BadRequestException(
+                'Contract already finalized and cannot be changed',
+            );
+        }
+
         // Update contract data
         game.contractData = {
             date: dto.date,
@@ -97,6 +119,7 @@ export class GamesService {
             location: dto.location,
             reminder: dto.reminder,
         };
+        game.status = GameStatus.SCHEDULED;
 
         await this.gameRepository.save(game);
 
@@ -104,6 +127,7 @@ export class GamesService {
             success: true,
             gameId: game.id,
             contractData: game.contractData,
+            locked: true,
         };
     }
 

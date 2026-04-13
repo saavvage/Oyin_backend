@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
@@ -7,6 +7,9 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 
+RUN npm run build
+
+ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:prod"]

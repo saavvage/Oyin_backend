@@ -27,6 +27,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePushSettingsDto } from './dto/update-push-settings.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ReplaceSportProfilesDto } from './dto/replace-sport-profiles.dto';
+import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 const avatarUploadDir = () => {
   const configured = (process.env.UPLOAD_AVATAR_DIR || '').trim();
@@ -86,6 +88,20 @@ export class UsersController {
     return this.usersService.updateProfile(user.userId, dto);
   }
 
+  @Put('me/password')
+  @UseGuards(JwtAuthGuard)
+  async updatePassword(
+    @CurrentUser() user: any,
+    @Body() dto: UpdatePasswordDto,
+    @Req() req: Request,
+  ) {
+    return this.usersService.updatePassword(
+      user.userId,
+      dto,
+      req.headers.authorization,
+    );
+  }
+
   @Put('me/avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -134,6 +150,21 @@ export class UsersController {
     @Body() dto: UpdateLocationDto,
   ) {
     return this.usersService.updateLocation(user.userId, dto);
+  }
+
+  @Get('me/availability')
+  @UseGuards(JwtAuthGuard)
+  async getAvailability(@CurrentUser() user: any) {
+    return this.usersService.getAvailability(user.userId);
+  }
+
+  @Put('me/availability')
+  @UseGuards(JwtAuthGuard)
+  async updateAvailability(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateAvailabilityDto,
+  ) {
+    return this.usersService.updateAvailability(user.userId, dto);
   }
 
   @Get('me/push-settings')

@@ -22,9 +22,13 @@ export class AiChatController {
 
   /** POST /api/ai/chat — proxy to ML service, persists both turns */
   @Post('chat')
-  async chat(@CurrentUser() user: any, @Body() dto: AiChatDto) {
-    this.logger.log(
-      `AI chat from user ${user.userId}: ${dto.message.slice(0, 50)}...`,
+  async chat(@Body() dto: AiChatDto) {
+    const userId = dto.user_id;
+    this.logger.log(`AI chat from user ${userId}: ${dto.message.slice(0, 50)}...`);
+    return this.aiChatService.chat(
+      userId,
+      dto.message,
+      dto.user_context,
     );
     return this.aiChatService.chat(user.userId, dto.message, dto.user_context);
   }

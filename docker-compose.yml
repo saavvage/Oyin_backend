@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   oyin-db:
     image: postgres:15
@@ -34,8 +32,12 @@ services:
       dockerfile: Dockerfile
     container_name: oyin-ml
     restart: unless-stopped
-    env_file:
-      - ../oyin_ml/.env
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      USE_LOCAL_MODEL: ${USE_LOCAL_MODEL:-false}
+      MODEL_FALLBACK_ENABLED: ${MODEL_FALLBACK_ENABLED:-true}
+      LOCAL_MODEL_PATH: ${LOCAL_MODEL_PATH:-./models}
+      CHROMA_PERSIST_DIRECTORY: ${CHROMA_PERSIST_DIRECTORY:-./chroma_db}
     ports:
       - '8000:8000'
     volumes:
@@ -59,8 +61,8 @@ services:
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
-      # ML service inside Docker network
-      ML_SERVICE_URL: http://oyin-ml:8000
+      # ML service URL; defaults to internal container if ML_SERVICE_URL is not set in .env
+      ML_SERVICE_URL: ${ML_SERVICE_URL:-http://oyin-ml:8000}
     ports:
       - '3000:3000'
     depends_on:
@@ -70,7 +72,7 @@ services:
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
-    command: npm run start:dev
+    command: sh -c "npm install --legacy-peer-deps && npm run start:dev"
 
 volumes:
   oyin_db_data:
