@@ -13,6 +13,7 @@ import { ChatsModule } from './presenter/chats/chats.module';
 import { WalletModule } from './presenter/wallet/wallet.module';
 import { PushModule } from './infrastructure/push/push.module';
 import { AiChatModule } from './presenter/ai-chat/ai-chat.module';
+import { AdminModule } from './presenter/admin/admin.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AiChatModule } from './presenter/ai-chat/ai-chat.module';
     WalletModule,
     PushModule,
     AiChatModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
