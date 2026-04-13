@@ -21,6 +21,7 @@ type ThreadListItem = {
   avatarUrl: string;
   statusKey: string;
   timestamp: string;
+  isBlocked: boolean;
   badgeCount: number | null;
   accent: string | null;
   highlight: boolean;
@@ -70,6 +71,7 @@ export class ChatsService {
     for (const participant of participants) {
       const thread = participant.thread;
       if (!thread) continue;
+      if (participant.isBlocked) continue;
 
       const item = this.mapThreadParticipantToListItem(participant);
 
@@ -81,6 +83,17 @@ export class ChatsService {
     }
 
     return { actionRequired, upcoming };
+  }
+
+  async getBlockedThreads(userId: string) {
+    const participants = await this.participantRepository.find({
+      where: { userId, isBlocked: true },
+      relations: ['thread'],
+    });
+
+    return participants
+      .filter((participant) => !!participant.thread)
+      .map((participant) => this.mapThreadParticipantToListItem(participant));
   }
 
   async getMessages(userId: string, threadId: string, before?: string) {
@@ -259,6 +272,21 @@ export class ChatsService {
     return { isBlocked: true };
   }
 
+  async unblockThread(userId: string, threadId: string) {
+    const participant = await this.participantRepository.findOne({
+      where: { userId, threadId },
+    });
+
+    if (!participant) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    participant.isBlocked = false;
+    await this.participantRepository.save(participant);
+
+    return { isBlocked: false };
+  }
+
   async reportThread(userId: string, threadId: string, reason?: string) {
     await this.ensureParticipant(userId, threadId);
 
@@ -353,6 +381,7 @@ export class ChatsService {
       avatarUrl: participant.partnerAvatarUrl,
       statusKey: thread.statusKey || '',
       timestamp: this.formatTimestamp(thread),
+      isBlocked: participant.isBlocked == true,
       badgeCount: participant.unreadCount > 0 ? participant.unreadCount : null,
       accent: thread.accent || null,
       highlight: thread.highlight || false,

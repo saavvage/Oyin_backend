@@ -28,6 +28,7 @@ import { UpdatePushSettingsDto } from './dto/update-push-settings.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
 import { ReplaceSportProfilesDto } from './dto/replace-sport-profiles.dto';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 const avatarUploadDir = () => {
   const configured = (process.env.UPLOAD_AVATAR_DIR || '').trim();
@@ -85,6 +86,20 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(user.userId, dto);
+  }
+
+  @Put('me/password')
+  @UseGuards(JwtAuthGuard)
+  async updatePassword(
+    @CurrentUser() user: any,
+    @Body() dto: UpdatePasswordDto,
+    @Req() req: Request,
+  ) {
+    return this.usersService.updatePassword(
+      user.userId,
+      dto,
+      req.headers.authorization,
+    );
   }
 
   @Put('me/avatar')

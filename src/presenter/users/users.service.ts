@@ -2,13 +2,17 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../domain/entities/user.entity';
 import { SportProfile } from '../../domain/entities/sport-profile.entity';
+import { AuthService } from '../auth/auth.service';
 import { CreateSportProfileDto } from './dto/create-sport-profile.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePushSettingsDto } from './dto/update-push-settings.dto';
 import { UpdatePushTokenDto } from './dto/update-push-token.dto';
@@ -22,6 +26,7 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(SportProfile)
     private sportProfileRepository: Repository<SportProfile>,
+    private authService: AuthService,
   ) {}
 
   async getMe(userId: string) {
@@ -89,6 +94,111 @@ export class UsersService {
         karma: user.karma,
         reliabilityScore: user.reliabilityScore,
       },
+    };
+  }
+
+  async updatePassword(
+    userId: string,
+    dto: UpdatePasswordDto,
+    authorizationHeader?: string,
+  ) {
+    const user = await this.getUserOrThrow(userId);
+    const newPassword = (dto.newPassword || '').trim();
+    if (newPassword.length < 6) {
+      throw new BadRequestException(
+        'Password must contain at least 6 characters',
+      );
+    }
+
+    const currentPassword = (dto.currentPassword || '').trim();
+    const code = (dto.code || '').trim();
+    const rawEmail = (dto.email || '').trim();
+    const rawPhone = (dto.phone || '').trim();
+
+    if (currentPassword.length > 0) {
+      if (!user.passwordHash) {
+        throw new BadRequestException('Password is not set for this account');
+      }
+      const validPassword = await bcrypt.compare(
+        currentPassword,
+        user.passwordHash,
+      );
+      if (!validPassword) {
+        throw new BadRequestException('Current password is invalid');
+      }
+    } else {
+      if (!code) {
+        throw new BadRequestException(
+          'Verification code is required to change password without current password',
+        );
+      }
+
+      const useEmail = rawEmail.length > 0;
+      const usePhone = rawPhone.length > 0;
+      if (useEmail == usePhone) {
+        throw new BadRequestException(
+          'Provide exactly one identifier: email or phone',
+        );
+      }
+
+      if (useEmail) {
+        if (!user.email || user.email.trim().length == 0) {
+          throw new BadRequestException('Account email is not set');
+        }
+
+        const email = this.normalizeEmail(rawEmail);
+        const currentEmail = this.normalizeEmail(user.email);
+        if (email !== currentEmail) {
+          throw new BadRequestException(
+            'Use your current account email for verification',
+          );
+        }
+
+        try {
+          await this.authService.verify({ email, code }, authorizationHeader);
+        } catch (error) {
+          this.rethrowVerificationError(error);
+        }
+      } else {
+        if (
+          !user.phone ||
+          user.phone.trim().length == 0 ||
+          user.phone.startsWith('tmp_')
+        ) {
+          throw new BadRequestException('Account phone is not set');
+        }
+
+        const phone = this.normalizePhone(rawPhone);
+        const currentPhone = this.normalizePhone(user.phone);
+        if (phone !== currentPhone) {
+          throw new BadRequestException(
+            'Use your current account phone for verification',
+          );
+        }
+
+        try {
+          await this.authService.verify({ phone, code }, authorizationHeader);
+        } catch (error) {
+          this.rethrowVerificationError(error);
+        }
+      }
+    }
+
+    if (user.passwordHash) {
+      const isSame = await bcrypt.compare(newPassword, user.passwordHash);
+      if (isSame) {
+        throw new BadRequestException(
+          'New password must be different from current password',
+        );
+      }
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Password updated successfully',
     };
   }
 
@@ -393,5 +503,54 @@ export class UsersService {
       bySport.set(profile.sportType, profile);
     }
     return Array.from(bySport.values());
+  }
+
+  private normalizeEmail(rawEmail: string) {
+    const email = (rawEmail || '').trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('Valid email is required');
+    }
+    return email;
+  }
+
+  private normalizePhone(rawPhone: string) {
+    const value = (rawPhone || '').trim();
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+      throw new BadRequestException('Phone number is required');
+    }
+    if (value.startsWith('+')) {
+      return `+${digits}`;
+    }
+    if (digits.startsWith('00') && digits.length > 2) {
+      return `+${digits.slice(2)}`;
+    }
+    return `+${digits}`;
+  }
+
+  private rethrowVerificationError(error: unknown): never {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    if (error instanceof UnauthorizedException) {
+      const response = error.getResponse();
+      const message =
+        typeof response === 'string'
+          ? response
+          : (response as { message?: string | string[] })?.message;
+
+      if (Array.isArray(message) && message.length > 0) {
+        throw new BadRequestException(message[0]);
+      }
+
+      if (typeof message === 'string' && message.trim().length > 0) {
+        throw new BadRequestException(message.trim());
+      }
+
+      throw new BadRequestException('Verification failed');
+    }
+
+    throw error;
   }
 }

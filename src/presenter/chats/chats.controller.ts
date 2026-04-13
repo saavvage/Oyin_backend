@@ -36,6 +36,11 @@ export class ChatsController {
     return this.chatsService.getThreads(user.userId);
   }
 
+  @Get('blocked')
+  getBlockedThreads(@CurrentUser() user: any) {
+    return this.chatsService.getBlockedThreads(user.userId);
+  }
+
   @Get('threads/:id/messages')
   getMessages(
     @CurrentUser() user: any,
@@ -79,6 +84,11 @@ export class ChatsController {
   @Post('threads/:id/block')
   blockThread(@CurrentUser() user: any, @Param('id') id: string) {
     return this.chatsService.blockThread(user.userId, id);
+  }
+
+  @Post('threads/:id/unblock')
+  unblockThread(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.chatsService.unblockThread(user.userId, id);
   }
 
   @Post('threads/:id/report')
