@@ -38,7 +38,9 @@ import { AdminModule } from './presenter/admin/admin.module';
                 database: configService.get<string>('DB_DATABASE'),
               }),
           entities: [__dirname + '/domain/entities/**/*.entity{.ts,.js}'],
-          synchronize: configService.get('NODE_ENV') === 'development',
+          synchronize:
+            configService.get('DB_SYNCHRONIZE') === 'true' ||
+            configService.get('NODE_ENV') === 'development',
           logging: configService.get('NODE_ENV') === 'development',
           ...(isProd ? { ssl: { rejectUnauthorized: false } } : {}),
         };
