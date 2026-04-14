@@ -8,6 +8,8 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AiChatMessage } from '../../domain/entities/ai-chat-message.entity';
 import { UserContextBuilderService } from './user-context-builder.service';
 

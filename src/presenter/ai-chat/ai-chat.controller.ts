@@ -30,7 +30,6 @@ export class AiChatController {
       dto.message,
       dto.user_context,
     );
-    return this.aiChatService.chat(user.userId, dto.message, dto.user_context);
   }
 
   /** GET /api/ai/history — returns prior messages for the current user */
