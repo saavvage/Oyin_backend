@@ -21,7 +21,7 @@ export class AiChatController {
   constructor(private readonly aiChatService: AiChatService) {}
 
   /** POST /api/ai/chat — proxy to ML service, persists both turns */
-  @UseGuards(JwtAuthGuard)
+  //@UseGuards(JwtAuthGuard)
   @Post('chat')
   async chat(@Body() dto: AiChatDto) {
     const userId = dto.user_id;
@@ -34,7 +34,7 @@ export class AiChatController {
   }
 
   /** GET /api/ai/history — returns prior messages for the current user */
-  @UseGuards(JwtAuthGuard)
+ // @UseGuards(JwtAuthGuard)
   @Get('history')
   async history(
     @CurrentUser() user: any,
@@ -48,7 +48,7 @@ export class AiChatController {
   }
 
   /** DELETE /api/ai/history — clears the rolling thread */
-  @UseGuards(JwtAuthGuard)
+ // @UseGuards(JwtAuthGuard)
   @Delete('history')
   async clearHistory(@CurrentUser() user: any) {
     return this.aiChatService.clearHistory(user.userId);

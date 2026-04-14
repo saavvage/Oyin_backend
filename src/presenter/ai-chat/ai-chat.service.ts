@@ -36,7 +36,7 @@ export class AiChatService {
     private readonly contextBuilder: UserContextBuilderService,
   ) {
     this.mlBaseUrl = (
-      this.config.get<string>('ML_SERVICE_URL') || 'http://localhost:8000'
+      this.config.get<string>('ML_SERVICE_URL') || ''
     ).replace(/\/+$/, '');
     this.logger.log(`ML service URL: ${this.mlBaseUrl}`);
   }
