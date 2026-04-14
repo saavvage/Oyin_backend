@@ -14,13 +14,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 export class AiChatController {
   private readonly logger = new Logger(AiChatController.name);
 
   constructor(private readonly aiChatService: AiChatService) {}
 
   /** POST /api/ai/chat — proxy to ML service, persists both turns */
+  @UseGuards(JwtAuthGuard)
   @Post('chat')
   async chat(@Body() dto: AiChatDto) {
     const userId = dto.user_id;
@@ -33,6 +34,7 @@ export class AiChatController {
   }
 
   /** GET /api/ai/history — returns prior messages for the current user */
+  @UseGuards(JwtAuthGuard)
   @Get('history')
   async history(
     @CurrentUser() user: any,
@@ -46,6 +48,7 @@ export class AiChatController {
   }
 
   /** DELETE /api/ai/history — clears the rolling thread */
+  @UseGuards(JwtAuthGuard)
   @Delete('history')
   async clearHistory(@CurrentUser() user: any) {
     return this.aiChatService.clearHistory(user.userId);
