@@ -23,17 +23,26 @@ import { AdminModule } from './presenter/admin/admin.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: +configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/domain/entities/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
-        logging: configService.get('NODE_ENV') === 'development',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const url = configService.get<string>('DATABASE_URL');
+        const isProd = configService.get('NODE_ENV') === 'production';
+        return {
+          type: 'postgres',
+          ...(url
+            ? { url }
+            : {
+                host: configService.get<string>('DB_HOST'),
+                port: Number(configService.get<string>('DB_PORT') ?? 5432),
+                username: configService.get<string>('DB_USERNAME'),
+                password: configService.get<string>('DB_PASSWORD'),
+                database: configService.get<string>('DB_DATABASE'),
+              }),
+          entities: [__dirname + '/domain/entities/**/*.entity{.ts,.js}'],
+          synchronize: configService.get('NODE_ENV') === 'development',
+          logging: configService.get('NODE_ENV') === 'development',
+          ...(isProd ? { ssl: { rejectUnauthorized: false } } : {}),
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
